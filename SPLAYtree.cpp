@@ -21,7 +21,6 @@ class splayTree {
     void insert(int key); //inserts key into tree
 
     //printing
-    void printInorder();
     void printPostorder();
 
     splayNode * root;
@@ -44,7 +43,7 @@ class splayTree {
     splayNode * splay(splayNode * node, splayNode * treeRoot); //Splay node in tree treeRoot
 
     bool search(int key, splayNode * treeRoot);
-    splayNode * insert(int key, splayNode * treeRoot);
+    splayNode * insert(int key, splayNode * treeRoot, splayNode * p_node);
 
     splayNode * makeEmpty(splayNode* t);
 
@@ -249,6 +248,7 @@ void splayTree::zig_zag_right(splayNode * x) {
 }
 
 splayNode * splayTree::splay(splayNode * node, splayNode * treeRoot) { //Splay node in tree treeRoot
+
   splayNode * father = node->parent;
   while (father != NULL) {
     if(father->parent == NULL)
@@ -258,10 +258,10 @@ splayNode * splayTree::splay(splayNode * node, splayNode * treeRoot) { //Splay n
     father = node->parent;
   }
   //std::cout << node->key << std::endl;
-  //treeRoot = node;
+  treeRoot = node;
   //root = treeRoot;
-  //std::cout << treeRoot->key << std::endl;
-  return node;
+    std::cout << "splayReturn: " << treeRoot->key << std::endl;
+  return treeRoot;
 }
 
 // TODO - CHECK SEARCH operation
@@ -296,29 +296,39 @@ bool splayTree::search(int key) {
   return search(key, root);
 }
 
-splayNode * splayTree::insert(int key, splayNode * treeRoot) {
+splayNode * splayTree::insert(int key, splayNode * treeRoot, splayNode * p_node) {
 
   if(treeRoot == NULL) {
   //    splayNode * x = newNode(key);
       treeRoot = newNode(key);
-      //std::cout << treeRoot->key << std::endl;
-      //splay(treeRoot, root);
-      return splay(treeRoot, root);
+      treeRoot->parent = p_node;
+
+      if (p_node!=NULL) {
+        if (treeRoot->key < p_node->key && p_node!=NULL) {
+          p_node->left = treeRoot;
+        }
+        else {  //treeRoot->val > p_node->val
+          p_node->right = treeRoot;
+        }
+      }
+      std::cout << "insertHelper_treeRoot: " << treeRoot->key << std::endl;
+      return treeRoot;
   }
   if(key == treeRoot->key) {
     std::cout << "already in" << std::endl;
     return NULL;
   }
   if(key<treeRoot->key)
-      treeRoot->left = insert(key, treeRoot->left);
+      return insert(key, treeRoot->left, treeRoot);
   else //key >= treeRoot->key
-      treeRoot->right = insert(key, treeRoot->right);
-  return treeRoot;
+      return insert(key, treeRoot->right, treeRoot);
 }
 
 void splayTree::insert(int key) {
-  //splayNode * x = insert(key, root);
-  root = insert(key, root);
+  splayNode * x = insert(key, root, NULL);
+  std::cout << "insert_x: " << x->key << std::endl;
+  root = splay(x, root);
+  std::cout << "insert_root: " << x->key << std::endl;
   //std::cout << "insert(key, root) = " << (insert(key, root))->key << std::endl;
   return;
 }
@@ -359,11 +369,11 @@ int main() {
   t.insert(2);
   //t.printInorder();
 
-  //std::cout << "root: " << t.root->key << std::endl;
+  std::cout << "root: " << t.root->key << std::endl;
   t.insert(6);
   //t.insert(3);
 
-  //std::cout << "root: " << t.root->key << std::endl;
+  std::cout << "root: " << t.root->key << std::endl;
   t.printInorder(); std::cout << std::endl;
   t.printPostorder(); std::cout << std::endl;
   //std::cout << "done" << std::endl;
@@ -371,10 +381,3 @@ int main() {
 
   return 0;
 }
-
-
-
-
-
-
-//using for not reducing save page reduction. Delete when done coding
