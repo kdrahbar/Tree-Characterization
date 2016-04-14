@@ -1,90 +1,167 @@
-#include <iostream>
-#include <string>
+#include<iostream>
+using namespace std;
 
-struct BSTnode{
-    int key;
-    struct BSTnode * left;
-    struct BSTnode * right;
+//Can improve delete operation
+//Just got something working
+
+struct BSTnode
+{
+    int data;
+    BSTnode* left;
+    BSTnode* right;
 };
 
-class BSTtree{
+class BSTtree
+{
   public:
     BSTtree();
-    struct BSTnode * insert(int );
+    ~BSTtree();
+    void insert(int);
+    void remove(int);
+    bool search(int);
     void printInorder();
 
   private:
-    BSTnode * root;
+    BSTnode* root;
 
-    struct BSTnode * newNode(int);
-    void printInorder(struct BSTnode *);
+    BSTnode * makeEmpty(BSTnode *);
+    BSTnode * insert(int, BSTnode *);
+    BSTnode * findMin(BSTnode *);
+    BSTnode * findMax(BSTnode *);
+    BSTnode * remove(int, BSTnode *);
+    bool search(int, BSTnode *);
 
-    struct BSTnode * insert(struct BSTnode*, int );
+    //print
+    void printInorder(BSTnode * t);
 
 };
 
 BSTtree::BSTtree() {
     root = NULL;
-    return;
 }
 
-struct BSTnode * BSTtree::newNode(int key) {
-    struct BSTnode * temp = new BSTnode;
-    temp->key = key;
-    temp->left = temp->right = NULL;
-    return temp;
+BSTtree::~BSTtree() {
+  root = makeEmpty(root);
 }
 
-void BSTtree::printInorder(struct BSTnode * leaf) {
-    if (leaf != NULL) {
-        printInorder(leaf->left);
-        std::cout << leaf->key << std::endl;
-        printInorder(leaf->right);
-    }
-    return;
+void BSTtree::insert(int x) {
+  root = insert(x, root);
 }
 
-struct BSTnode* BSTtree::insert (struct BSTnode* node, int key) {
-    if(node == NULL)
-        return newNode(key);
-
-    if(key<node->key)
-        node->left = insert(node->left, key);
-    else //key >= node->key
-        node->right = insert(node->right, key);
-    return node;
+void BSTtree::remove(int x) {
+    root = remove(x, root);
 }
 
-struct BSTnode * BSTtree::insert(int key) {
-    root = insert(root, key);
-    return root;
+bool BSTtree::search(int x, BSTnode* t) {
+  if(t == NULL)
+      return false;
+  else if(x < t->data)
+      return search(x, t->left);
+  else if(x > t->data)
+      return search(x, t->right);
+  else
+      return true;
+}
+
+bool BSTtree::search(int x) {
+  return search(x, root);
+}
+
+BSTnode* BSTtree::makeEmpty(BSTnode* t) {
+  if(t == NULL)
+      return NULL;
+  {
+      makeEmpty(t->left);
+      makeEmpty(t->right);
+      delete t;
+  }
+  return NULL;
+}
+
+BSTnode* BSTtree::insert(int x, BSTnode* t) {
+  if(t == NULL)
+  {
+      t = new BSTnode;
+      t->data = x;
+      t->left = t->right = NULL;
+  }
+  else if(x < t->data)
+      t->left = insert(x, t->left);
+  else if(x > t->data)
+      t->right = insert(x, t->right);
+  return t;
+}
+
+BSTnode* BSTtree::remove(int x, BSTnode* t) {
+  BSTnode* temp;
+  if(t == NULL)
+      return NULL;
+  else if(x < t->data)
+      t->left = remove(x, t->left);
+  else if(x > t->data)
+      t->right = remove(x, t->right);
+  else if(t->left && t->right)
+  {
+      temp = findMin(t->right);
+      t->data = temp->data;
+      t->right = remove(t->data, t->right);
+  }
+  else
+  {
+      temp = t;
+      if(t->left == NULL)
+          t = t->right;
+      else if(t->right == NULL)
+          t = t->left;
+      delete temp;
+  }
+
+  return t;
+}
+
+BSTnode * BSTtree::findMin(BSTnode * t) {
+  if(t == NULL)
+      return NULL;
+  else if(t->left == NULL)
+      return t;
+  else
+      return findMin(t->left);
+}
+
+BSTnode * BSTtree::findMax(BSTnode * t) {
+  if(t == NULL)
+      return NULL;
+  else if(t->right == NULL)
+      return t;
+  else
+      return findMax(t->right);
+}
+
+void BSTtree::printInorder(BSTnode* t) {
+  if(t == NULL)
+      return;
+  printInorder(t->left);
+  std::cout << t->data << std::endl;
+  printInorder(t->right);
 }
 
 void BSTtree::printInorder() {
-    printInorder(root);
-    return;
+  return printInorder(root);
 }
 
-int main() {
-
-    BSTtree tree;
-    tree.insert(10);
-    tree.insert(40);
-    tree.insert(20);
-    tree.insert(30);
-    tree.insert(50);
-    tree.insert(10);
-   
-    tree.printInorder(); 
-
-
-
-    return 0;
+int main()
+{
+    BSTtree t;
+    t.insert(20);
+    t.insert(25);
+    t.insert(15);
+    t.insert(10);
+    t.insert(30);
+    t.printInorder();
+    t.remove(20);
+    t.printInorder();
+    t.remove(25);
+    t.printInorder();
+    t.remove(30);
+    t.printInorder();
 }
-
-
-
-
-
-
-

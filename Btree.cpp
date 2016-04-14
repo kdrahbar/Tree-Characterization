@@ -613,15 +613,6 @@ int main()
     t.insert(11);
     t.insert(3);
     t.insert(71);
-    t.insert(10);
-    t.insert(13);
-    t.insert(54);
-    t.insert(16);
-    t.insert(21);
-    t.insert(4);
-    t.insert(5);
-    t.insert(20);
-    t.insert(22);
     t.insert(1);
     t.insert(17);
     t.insert(12);
