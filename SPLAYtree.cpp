@@ -1,193 +1,380 @@
 #include <iostream>
+#include <string>
 
-struct SPLAYnode
-{
+//http://www.csee.umbc.edu/courses/undergraduate/341/fall98/frey/ClassNotes/Class17/splay.html
+//http://www.cs.cornell.edu/courses/cs3110/2011sp/recitations/rec25-splay/splay.htm
+// http://software.ucv.ro/~mburicea/lab7ASD.pdf
+
+struct splayNode{
     int key;
-    SPLAYnode *left;
-    SPLAYnode * right;
+    splayNode * left;
+    splayNode * right;
+    splayNode * parent;
 };
 
-class SPLAYtree {
+class splayTree {
   public:
-  	SPLAYtree();
+    splayTree();
+    ~splayTree();
 
-	SPLAYnode * insert(int);
-	SPLAYnode * search(int);
+    bool search(int key); //returns true if in tree
+    void insert(int key); //inserts key into tree
 
-	void printPreorder();
+    //printing
+    void printInorder();
+    void printPostorder();
 
+    splayNode * root;
   private:
-  	SPLAYnode * root;
+    //splayNode * root;
+    splayNode * newNode(int key);
 
-  	SPLAYnode * insert(SPLAYnode *, int);
-	SPLAYnode * search(SPLAYnode *, int);
+    void single_rotate(splayNode * x);            //zig left || zig right
+    void double_rotate(splayNode * x); //either zig zig || zig zag
+    // Zig case
+    void zig_left(splayNode * x); //x is left child
+    void zig_right(splayNode * x); //x is right child
+    // ZigZig case
+    void zig_zig_left(splayNode * x);  //x is left left
+    void zig_zig_right(splayNode * x); //x is right right
+    // ZigZag
+    void zig_zag_left(splayNode * x); //x is left right
+    void zig_zag_right(splayNode * x); //x is right left
 
-	//printing
-	void printPreorder(SPLAYnode *);
+    splayNode * splay(splayNode * node, splayNode * treeRoot); //Splay node in tree treeRoot
 
+    bool search(int key, splayNode * treeRoot);
+    splayNode * insert(int key, splayNode * treeRoot);
 
-  	SPLAYnode * newNode(int);
-  	SPLAYnode * rightRotate(SPLAYnode *);
-	SPLAYnode * leftRotate(SPLAYnode *);
-	SPLAYnode * splay(SPLAYnode *, int);
+    splayNode * makeEmpty(splayNode* t);
+
+    //printing
+    void printInorder(splayNode * node);
+    void printPostorder(splayNode * node);
+
 };
 
-SPLAYtree::SPLAYtree() {
-	root = NULL;
-	return;
+splayTree::splayTree() {
+  this->root = new splayNode;
+  this->root = NULL;
+  return;
 }
 
-SPLAYnode * SPLAYtree::newNode(int key) {
-	SPLAYnode* node = new SPLAYnode;
-    node->key   = key;
-    node->left  = NULL;
-    node->right = NULL;
-    return (node);
+splayTree::~splayTree() {
+  root = makeEmpty(root);
 }
-
-SPLAYnode * SPLAYtree::rightRotate(SPLAYnode * x) {
-	SPLAYnode * y = x->left;
-	x->left = y->right;
-	y->right = x;
-	return y;
-}
-
-SPLAYnode * SPLAYtree::leftRotate(SPLAYnode * x)
+splayNode* splayTree::makeEmpty(splayNode* t)
 {
-    SPLAYnode *y = x->right;
-    x->right = y->left;
-    y->left = x;
-    return y;
+    if(t == NULL)
+        return NULL;
+    {
+        makeEmpty(t->left);
+        makeEmpty(t->right);
+        delete t;
+    }
+    return NULL;
 }
 
-SPLAYnode * SPLAYtree::splay(SPLAYnode *node, int key)
-{
-    // Base cases: node is NULL or key is present at node
-    if (node == NULL || node->key == key)
-        return node;
- 
-    // Key lies in left subtree
-    if (node->key > key)
-    {
-        // Key is not in tree, we are done
-        if (node->left == NULL) return node;
- 
-        // Zig-Zig (Left Left)
-        if (node->left->key > key)
-        {
-            // First recursively bring the key as node of left-left
-            node->left->left = splay(node->left->left, key);
- 
-            // Do first rotation for node, second rotation is done after else
-            node = rightRotate(node);
-        }
-        else if (node->left->key < key) // Zig-Zag (Left Right)
-        {
-            // First recursively bring the key as node of left-right
-            node->left->right = splay(node->left->right, key);
- 
-            // Do first rotation for node->left
-            if (node->left->right != NULL)
-                node->left = leftRotate(node->left);
-        }
- 
-        // Do second rotation for node
-        return (node->left == NULL)? node: rightRotate(node);
-    }
-    else // Key lies in right subtree
-    {
-        // Key is not in tree, we are done
-        if (node->right == NULL) return node;
- 
-        // Zag-Zig (Right Left)
-        if (node->right->key > key)
-        {
-            // Bring the key as node of right-left
-            node->right->left = splay(node->right->left, key);
- 
-            // Do first rotation for node->right
-            if (node->right->left != NULL)
-                node->right = rightRotate(node->right);
-        }
-        else if (node->right->key < key)// Zag-Zag (Right Right)
-        {
-            // Bring the key as node of right-right and do first rotation
-            node->right->right = splay(node->right->right, key);
-            node = leftRotate(node);
-        }
- 
-        // Do second rotation for node
-        return (node->right == NULL) ? node: leftRotate(node);
-    }
+splayNode * splayTree::newNode(int key) {
+  splayNode * x = new splayNode;
+  x->key = key;
+  x->left = NULL;
+  x->right = NULL;
+  x->parent = NULL;
+  return x;
 }
 
-SPLAYnode * SPLAYtree::search(SPLAYnode * node, int key) {
-	return splay(node, key);
+void splayTree::single_rotate(splayNode * x) {
+  if (x->parent->left == x)
+    zig_left(x);
+  else
+    zig_right(x);
+  return;
 }
 
-SPLAYnode * SPLAYtree::insert(SPLAYnode * node, int key)
-{
-    // Simple Case: If tree is empty
-    if (node == NULL) return newNode(key);
- 
-    // Bring the closest leaf node to node
-    node = splay(node, key);
- 
-    // If keyey is already present, then return
-    if (node->key == key) return node;
- 
-    // Otherwise allocate memory for new node
-    	SPLAYnode *newnode  = newNode(key);
- 
-    // If node's keyey is greater, makeye node as right child
-    // of newnode and copy the left child of node to newnode
-    if (node->key > key)
-    {
-        newnode->right = node;
-        newnode->left = node->left;
-        node->left = NULL;
-    }
- 
-    // If node's keyey is smaller, makeye node as left child
-    // of newnode and copy the right child of node to newnode
+void splayTree::double_rotate(splayNode * x) {
+  if (x->parent->left == x && x->parent->parent->left == x->parent)
+    zig_zig_left(x);
+  else if (x->parent->left==x && x->parent->parent->right==x->parent)
+    zig_zag_left(x);
+  else if (x->parent->right==x && x->parent->parent->right==x->parent)
+    zig_zig_right(x);
+  else // (x->parent->right==x && x->parent->parent->left==x->parent)
+    zig_zag_right(x);
+  return;
+}
+
+void splayTree::zig_left(splayNode * x) {
+  splayNode * parent = x->parent;
+  splayNode * b = x->right;
+
+  x->right = parent;
+  x->parent = NULL;
+  if (b != NULL)
+    b->parent = parent;
+  parent->left = b;
+  parent->parent = x;
+
+  return;
+}
+
+void splayTree::zig_right(splayNode * x) {
+  splayNode * parent = x->parent;
+  splayNode * b = x->left;
+
+  x->left = parent;
+  x->parent = NULL;
+  if (b != NULL)
+    b->parent = parent;
+  parent->right = b;
+  parent->parent = x;
+
+  return;
+}
+
+void splayTree::zig_zig_left(splayNode * x) {
+  splayNode * parent = x->parent;
+  splayNode * grandParent = parent->parent;
+  splayNode * greatGrandParent = grandParent->parent;
+  splayNode * b = x->right;
+  splayNode * c = parent->right;
+
+  x->parent = greatGrandParent;
+  if (greatGrandParent!=NULL && greatGrandParent->left == grandParent)
+    greatGrandParent->left = x;
+  else if (greatGrandParent!=NULL && greatGrandParent->right == grandParent)
+    greatGrandParent->right = x;
+
+  x->right = parent;
+  parent->parent = x;
+  parent->right = grandParent;
+  grandParent->parent = parent;
+
+  if (b != NULL)
+    b->parent = parent;
+  parent->left = b;
+
+  if (c != NULL)
+    c->parent = grandParent;
+  grandParent->left = c;
+
+  return;
+}
+
+void splayTree::zig_zig_right(splayNode * x) {
+  splayNode * parent = x->parent;
+  splayNode * grandParent = parent->parent;
+  splayNode * greatGrandParent = grandParent->parent;
+  splayNode * b = x->left;
+  splayNode * c = parent->left;
+
+  x->parent = greatGrandParent;
+  if (greatGrandParent!=NULL && greatGrandParent->left == grandParent)
+    greatGrandParent->left = x;
+  else if (greatGrandParent!=NULL && greatGrandParent->right == grandParent)
+    greatGrandParent->right = x;
+
+  x->left = parent;
+  parent->parent = x;
+  parent->left = grandParent;
+  grandParent->parent = parent;
+
+  if (b != NULL)
+    b->parent = parent;
+  parent->right = b;
+  if (c != NULL)
+    c->parent = grandParent;
+  grandParent->right = c;
+
+  return;
+}
+
+void splayTree::zig_zag_left(splayNode * x) {
+  splayNode * parent = x->parent;
+  splayNode * grandParent = parent->parent;
+  splayNode * greatGrandParent = grandParent->parent;
+  splayNode * b = x->left;
+  splayNode * c = x->right;
+
+  x->parent = greatGrandParent;
+  if (greatGrandParent!=NULL && greatGrandParent->left == grandParent)
+    greatGrandParent->left = x;
+  else if (greatGrandParent!=NULL && greatGrandParent->right == grandParent)
+    greatGrandParent->right = x;
+
+  x->left = grandParent;
+  grandParent->parent = x;
+  x->right = parent;
+  parent->parent = x;
+  if (b != NULL)
+    b->parent = grandParent;
+  grandParent->right = b;
+
+  if (c != NULL)
+    c->parent = parent;
+  parent->left = c;
+
+
+
+  return;
+}
+
+void splayTree::zig_zag_right(splayNode * x) {
+  splayNode * parent = x->parent;
+  splayNode * grandParent = parent->parent;
+  splayNode * greatGrandParent = grandParent->parent;
+  splayNode * b = x->left;
+  splayNode * c = x->right;
+
+  x->parent = greatGrandParent;
+  if (greatGrandParent!=NULL && greatGrandParent->left == grandParent)
+    greatGrandParent->left = x;
+  else if (greatGrandParent!=NULL && greatGrandParent->right == grandParent)
+    greatGrandParent->right = x;
+
+  x->right = grandParent;
+  grandParent->parent = x;
+  x->left = parent;
+  parent->parent = x;
+
+  if (b != NULL)
+    b->parent = parent;
+  parent->right = b;
+
+  if (c != NULL)
+    c->parent = grandParent;
+  grandParent->left = c;
+
+  return;
+}
+
+splayNode * splayTree::splay(splayNode * node, splayNode * treeRoot) { //Splay node in tree treeRoot
+  splayNode * father = node->parent;
+  while (father != NULL) {
+    if(father->parent == NULL)
+      single_rotate(node);
     else
-    {
-        newnode->left = node;
-        newnode->right = node->right;
-        node->right = NULL;
+      double_rotate(node);
+    father = node->parent;
+  }
+  //std::cout << node->key << std::endl;
+  //treeRoot = node;
+  //root = treeRoot;
+  //std::cout << treeRoot->key << std::endl;
+  return node;
+}
+
+// TODO - CHECK SEARCH operation
+bool splayTree::search(int key, splayNode * treeRoot) {
+  if (treeRoot==NULL) {
+    return false;
+    // return NULL;
+  }
+
+  splayNode * cur = treeRoot; //NODE TO Splay
+  splayNode * pred = NULL;
+  while (cur != NULL) {
+    if(key == cur->key) {
+      root = splay(cur, treeRoot);
+      return true;
     }
- 
-    return newnode; // newnode becomes new node
-}
 
-SPLAYnode * SPLAYtree::insert(int key){
-	root = insert(root, key);
-	return root;
-}
-
-void SPLAYtree::printPreorder(SPLAYnode * node)
-{
-    if (node != NULL)
-    {
-        std::cout << node->key << std::endl;
-        printPreorder(node->left);
-        printPreorder(node->right);
+    pred = cur;
+    if (key < cur->key) {
+      cur = cur->left;
     }
+    else {
+      cur = cur->right;
+    }
+  }
+
+  root = splay(pred, treeRoot);
+  return false;
 }
 
-void SPLAYtree::printPreorder() {
-	printPreorder(root);
+bool splayTree::search(int key) {
+  return search(key, root);
+}
+
+splayNode * splayTree::insert(int key, splayNode * treeRoot) {
+
+  if(treeRoot == NULL) {
+  //    splayNode * x = newNode(key);
+      treeRoot = newNode(key);
+      //std::cout << treeRoot->key << std::endl;
+      //splay(treeRoot, root);
+      return splay(treeRoot, root);
+  }
+  if(key == treeRoot->key) {
+    std::cout << "already in" << std::endl;
+    return NULL;
+  }
+  if(key<treeRoot->key)
+      treeRoot->left = insert(key, treeRoot->left);
+  else //key >= treeRoot->key
+      treeRoot->right = insert(key, treeRoot->right);
+  return treeRoot;
+}
+
+void splayTree::insert(int key) {
+  //splayNode * x = insert(key, root);
+  root = insert(key, root);
+  //std::cout << "insert(key, root) = " << (insert(key, root))->key << std::endl;
+  return;
+}
+
+void splayTree::printInorder(splayNode * node) {
+  if(node!=NULL) {
+    printInorder(node->left);
+    printInorder(node->right);
+    std::cout << node->key << std::endl;
+  }
+  return;
+}
+void splayTree::printInorder() {
+  printInorder(root);
+  return;
+}
+
+
+void splayTree::printPostorder(splayNode * node) {
+  if(node!=NULL) {
+    std::cout << node->key << std::endl;
+    printPostorder(node->left);
+    printPostorder(node->right);
+  }
+  return;
+}
+void splayTree::printPostorder() {
+  printPostorder(root);
+  return;
 }
 
 
 int main() {
+  splayTree t;
+  t.insert(3);
+  //t.printInorder();
 
-	SPLAYtree tree;
-	tree.insert(10);
-	tree.insert(20);
-		
-	tree.insert(30);
-	tree.insert(40);
-	tree.printPreorder();
-	return 0;
+  t.insert(2);
+  //t.printInorder();
+
+  //std::cout << "root: " << t.root->key << std::endl;
+  t.insert(6);
+  //t.insert(3);
+
+  //std::cout << "root: " << t.root->key << std::endl;
+  t.printInorder(); std::cout << std::endl;
+  t.printPostorder(); std::cout << std::endl;
+  //std::cout << "done" << std::endl;
+
+
+  return 0;
 }
+
+
+
+
+
+
+//using for not reducing save page reduction. Delete when done coding

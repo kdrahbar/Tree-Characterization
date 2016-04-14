@@ -59,10 +59,10 @@ void process_mem_usage(double& vm_usage, double& resident_set)
    resident_set = rss * page_size_kb;
 }
 
-class AVLtree 
+class AVLtree
 {
   public:
-   AVLtree(); 
+   AVLtree();
     //~BSTtree();
     struct AVLnode * insert(int);
     struct AVLnode * deleteNode(int);
@@ -77,7 +77,7 @@ class AVLtree
     struct AVLnode * deleteNode(struct AVLnode *, int);
     struct AVLnode * search(struct AVLnode *, int);
     //void insert(struct AVLnode * , int );
-     
+
 
     // printing
     void printPreorder(struct AVLnode *leaf);
@@ -132,7 +132,7 @@ struct AVLnode * AVLtree::rightRotate(struct AVLnode * y)
     x->height = std::max(height(x->left), height(x->right))+1;
 
     //return new root
-    return x; 
+    return x;
 }
 
 struct AVLnode * AVLtree::leftRotate(struct AVLnode * x)
@@ -181,11 +181,11 @@ struct AVLnode * AVLtree::insert(struct AVLnode* node, int key)
     //Left Left Case
     if (balance>1 && key<node->left->key)
         return rightRotate(node);
-    
+
     //Right Right Case
     else if (balance<-1 && key>node->right->key)
         return leftRotate(node);
-    
+
     //Left Right Case
     else if (balance>1 && key>node->left->key)
     {
@@ -228,20 +228,20 @@ void AVLtree::printPreorder(struct AVLnode* leaf)
 struct AVLnode * AVLtree::deleteNode(struct AVLnode* node, int key)
 {
     // STEP 1: PERFORM STANDARD BST DELETE
- 
+
     if (node == NULL)
         return node;
- 
+
     // If the key to be deleted is smaller than the node's key,
     // then it lies in left subtree
     if ( key < node->key )
         node->left = deleteNode(node->left, key);
- 
+
     // If the key to be deleted is greater than the node's key,
     // then it lies in right subtree
     else if( key > node->key )
         node->right = deleteNode(node->right, key);
- 
+
     // if key is same as node's key, then This is the node
     // to be deleted
     else
@@ -250,7 +250,7 @@ struct AVLnode * AVLtree::deleteNode(struct AVLnode* node, int key)
         if( (node->left == NULL) || (node->right == NULL) )
         {
             struct AVLnode *temp = node->left ? node->left : node->right;
- 
+
             // No child case
             if(temp == NULL)
             {
@@ -259,7 +259,7 @@ struct AVLnode * AVLtree::deleteNode(struct AVLnode* node, int key)
             }
             else // One child case
              *node = *temp; // Copy the contents of the non-empty child
- 
+
             free(temp);
         }
         else
@@ -267,50 +267,50 @@ struct AVLnode * AVLtree::deleteNode(struct AVLnode* node, int key)
             // node with two children: Get the inorder successor (smallest
             // in the right subtree)
             struct AVLnode* temp = minValueNode(node->right);
- 
+
             // Copy the inorder successor's data to this node
             node->key = temp->key;
- 
+
             // Delete the inorder successor
             node->right = deleteNode(node->right, temp->key);
         }
     }
- 
+
     // If the tree had only one node then return
     if (node == NULL)
       return node;
- 
+
     // STEP 2: UPDATE HEIGHT OF THE CURRENT NODE
     node->height = std::max(height(node->left), height(node->right)) + 1;
- 
+
     // STEP 3: GET THE BALANCE FACTOR OF THIS NODE (to check whether
     //  this node became unbalanced)
     int balance = getBalance(node);
- 
+
     // If this node becomes unbalanced, then there are 4 cases
- 
+
     // Left Left Case
     if (balance > 1 && getBalance(node->left) >= 0)
         return rightRotate(node);
- 
+
     // Left Right Case
     if (balance > 1 && getBalance(node->left) < 0)
     {
         node->left =  leftRotate(node->left);
         return rightRotate(node);
     }
- 
+
     // Right Right Case
     if (balance < -1 && getBalance(node->right) <= 0)
         return leftRotate(node);
- 
+
     // Right Left Case
     if (balance < -1 && getBalance(node->right) > 0)
     {
         node->right = rightRotate(node->right);
         return leftRotate(node);
     }
- 
+
     return node;
 }
 
@@ -324,7 +324,7 @@ AVLnode * AVLtree::search(struct AVLnode * node, int key) {
     return search(root->left, key);
 }
 
-AVLnode * AVLtree::insert(int key) 
+AVLnode * AVLtree::insert(int key)
 //void AVLtree::insert(int key)
 {
     root = insert(root, key);
@@ -376,7 +376,7 @@ void t_100() {
     auto end = get_time::now();
     auto diff = end - start;
     cout<<"Avg insert time for 100:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
-    
+
     random_shuffle(std::begin(test), std::end(test));
     start = get_time::now();
     for (int i = 0; i < size; i++) {
@@ -418,7 +418,7 @@ void t_1000() {
     auto end = get_time::now();
     auto diff = end - start;
     cout<<"Avg insert time for 1000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
-    
+
     random_shuffle(std::begin(test), std::end(test));
     start = get_time::now();
     for (int i = 0; i < size; i++) {
@@ -460,7 +460,7 @@ void t_10000() {
     auto end = get_time::now();
     auto diff = end - start;
     cout<<"Avg insert time for 10000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
-    
+
     random_shuffle(std::begin(test), std::end(test));
     start = get_time::now();
     for (int i = 0; i < size; i++) {
@@ -495,15 +495,15 @@ void t_100000() {
     for (int i = 0; i < size; i++) {
         tree.insert(test[i]);
     }
-    
+
     double vm, rss;
     process_mem_usage(vm, rss);
     cout << "VM: " << vm << "; RSS: " << rss << endl;
-    
+
     auto end = get_time::now();
     auto diff = end - start;
     cout<<"Avg insert time for 100000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
-    
+
     random_shuffle(std::begin(test), std::end(test));
     start = get_time::now();
     for (int i = 0; i < size; i++) {
@@ -543,11 +543,11 @@ void t_250000() {
     double vm, rss;
     process_mem_usage(vm, rss);
     cout << "VM: " << vm << "; RSS: " << rss << endl;
-    
+
     auto end = get_time::now();
     auto diff = end - start;
     cout<<"Avg insert time for 250,000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
-    
+
     random_shuffle(std::begin(test), std::end(test));
     start = get_time::now();
     for (int i = 0; i < size; i++) {
@@ -589,7 +589,7 @@ void t_500000() {
     auto end = get_time::now();
     auto diff = end - start;
     cout<<"Avg insert time for 500000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
-    
+
     random_shuffle(std::begin(test), std::end(test));
     start = get_time::now();
     for (int i = 0; i < size; i++) {
@@ -633,7 +633,7 @@ void t_750000() {
     auto end = get_time::now();
     auto diff = end - start;
     cout<<"Avg insert time for 750,000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
-    
+
     random_shuffle(std::begin(test), std::end(test));
     start = get_time::now();
     for (int i = 0; i < size; i++) {
@@ -676,7 +676,7 @@ void t_1000000() {
     auto end = get_time::now();
     auto diff = end - start;
     cout<<"Avg insert time for 1,000,000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
-    
+
     random_shuffle(std::begin(test), std::end(test));
     start = get_time::now();
     for (int i = 0; i < size; i++) {
@@ -699,6 +699,6 @@ int main() {
     t_500000();
     t_750000();
     t_1000000();
-    
+
     return 0;
 }
