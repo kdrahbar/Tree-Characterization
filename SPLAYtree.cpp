@@ -1,9 +1,15 @@
 #include <iostream>
 #include <string>
 
+//Straightforward topdown splayTree
+//Operations like standard BST, but splay after operation
+
 //http://www.csee.umbc.edu/courses/undergraduate/341/fall98/frey/ClassNotes/Class17/splay.html
 //http://www.cs.cornell.edu/courses/cs3110/2011sp/recitations/rec25-splay/splay.htm
 // http://software.ucv.ro/~mburicea/lab7ASD.pdf
+
+
+// http://lcm.csa.iisc.ernet.in/dsa/node94.html
 
 struct splayNode{
     int key;
@@ -19,9 +25,11 @@ class splayTree {
 
     bool search(int key); //returns true if in tree
     void insert(int key); //inserts key into tree
+    bool remove(int key); //deletes key from tree
 
     //printing
-    void printPostorder();
+    void printInorder();
+    void printPreorder();
 
     splayNode * root;
   private:
@@ -44,12 +52,22 @@ class splayTree {
 
     bool search(int key, splayNode * treeRoot);
     splayNode * insert(int key, splayNode * treeRoot, splayNode * p_node);
+    //splayNode * remove(int key, splayNode * root);
+
+    splayNode * splayMax(splayNode * treeRoot);
+    splayNode * join(splayNode * SL, splayNode * SR);
+    //void split(splayNode * S, splayNode ** SL, splayNode ** SR, int i);
+
+
+
+    splayNode * findMin(splayNode *);
+    splayNode * findMax(splayNode *);
 
     splayNode * makeEmpty(splayNode* t);
 
     //printing
     void printInorder(splayNode * node);
-    void printPostorder(splayNode * node);
+    void printPreorder(splayNode * node);
 
 };
 
@@ -257,10 +275,9 @@ splayNode * splayTree::splay(splayNode * node, splayNode * treeRoot) { //Splay n
       double_rotate(node);
     father = node->parent;
   }
-  //std::cout << node->key << std::endl;
   treeRoot = node;
-  //root = treeRoot;
-    std::cout << "splayReturn: " << treeRoot->key << std::endl;
+
+  //std::cout << "splayReturn: " << treeRoot->key << std::endl;
   return treeRoot;
 }
 
@@ -292,6 +309,10 @@ bool splayTree::search(int key, splayNode * treeRoot) {
   return false;
 }
 
+
+
+
+
 bool splayTree::search(int key) {
   return search(key, root);
 }
@@ -311,7 +332,7 @@ splayNode * splayTree::insert(int key, splayNode * treeRoot, splayNode * p_node)
           p_node->right = treeRoot;
         }
       }
-      std::cout << "insertHelper_treeRoot: " << treeRoot->key << std::endl;
+      //std::cout << "insertHelper_treeRoot: " << treeRoot->key << std::endl;
       return treeRoot;
   }
   if(key == treeRoot->key) {
@@ -326,18 +347,94 @@ splayNode * splayTree::insert(int key, splayNode * treeRoot, splayNode * p_node)
 
 void splayTree::insert(int key) {
   splayNode * x = insert(key, root, NULL);
-  std::cout << "insert_x: " << x->key << std::endl;
   root = splay(x, root);
-  std::cout << "insert_root: " << x->key << std::endl;
-  //std::cout << "insert(key, root) = " << (insert(key, root))->key << std::endl;
+  //std::cout << "insert_x: " << x->key << std::endl;
+  //std::cout << "insert_root: " << x->key << std::endl;
   return;
 }
+
+
+// NEED TO DOUBLE CHECK
+// parent assignement
+bool splayTree::remove(int key) {
+  if ( search(key) ) {
+    splayNode * SL = root->left;
+    if(SL != NULL) SL->parent = NULL;
+    splayNode * SR = root->right;
+    if(SR != NULL) SR->parent = NULL;
+
+    root = join(SL, SR);
+    return true;
+
+  }
+  return false;
+}
+
+splayNode * splayTree::splayMax(splayNode * treeRoot) {
+  //Don't need to check if treeRoot = NULL;
+  if(treeRoot == NULL) return NULL;
+
+  splayNode * cur = treeRoot;
+  splayNode * pred = NULL;
+  while (cur != NULL) {
+    pred = cur;
+    cur = cur->right;
+  }
+  return splay(pred, treeRoot);
+}
+
+splayNode * splayTree::join(splayNode * SL, splayNode * SR) {
+  if(SL != NULL) {
+    //NOT EFFICIENT BUT WORKS
+    splayNode * leftMax = findMax(SL);
+    search(leftMax->key, SL);
+    SL->parent = NULL;
+    SL->right = SR;
+    return SL;
+    //set
+  }
+  else if (SR != NULL) {
+    return SR;
+  }
+  else {
+    return NULL;
+  }
+}
+
+
+/*void splayTree::split(splayNode * S, splayNode ** SL, splayNode ** SR, int i) {
+
+
+  return ;
+}
+*/
+
+
+splayNode * splayTree::findMin(splayNode * t) {
+  if(t == NULL)
+      return NULL;
+  else if(t->left == NULL)
+      return t;
+  else
+      return findMin(t->left);
+}
+
+splayNode * splayTree::findMax(splayNode * t) {
+  if(t == NULL)
+      return NULL;
+  else if(t->right == NULL)
+      return t;
+  else
+      return findMax(t->right);
+}
+
+
 
 void splayTree::printInorder(splayNode * node) {
   if(node!=NULL) {
     printInorder(node->left);
     printInorder(node->right);
-    std::cout << node->key << std::endl;
+    std::cout << node->key << " ";//std::endl;
   }
   return;
 }
@@ -347,37 +444,105 @@ void splayTree::printInorder() {
 }
 
 
-void splayTree::printPostorder(splayNode * node) {
+void splayTree::printPreorder(splayNode * node) {
   if(node!=NULL) {
-    std::cout << node->key << std::endl;
-    printPostorder(node->left);
-    printPostorder(node->right);
+    std::cout << node->key << " ";// std::endl;
+    printPreorder(node->left);
+    printPreorder(node->right);
   }
   return;
 }
-void splayTree::printPostorder() {
-  printPostorder(root);
+void splayTree::printPreorder() {
+  printPreorder(root);
   return;
 }
 
 
 int main() {
   splayTree t;
+/*  t.insert(2);
   t.insert(3);
+  t.insert(5);
+  //if (t.search(2) == true) std::cout <<"true" << std::endl;
+  t.remove(3);
+  t.printPreorder();  std::cout << std::endl;
+*/
+  t.insert(2);
+  t.insert(3);
+  t.insert(5);
+  //if (t.search(2) == true) std::cout <<"true" << std::endl;
+  t.remove(3);
+  t.printPreorder();  std::cout << std::endl;
+
+
+  t.insert(3);
+  t.insert(624);
+  t.insert(629);
+  t.remove(629);
+
+  t.insert(6200);
+  t.insert(621);
+  t.remove(3);
+
+  t.insert(622);
+  t.insert(623);
+  t.insert(65);
+  t.insert(33);
+  std::cout <<"root:" << t.root->key << std::endl;
+  t.insert(32);
+  t.insert(16);
+  t.insert(322);
+  t.remove(623);
+
+  t.insert(52);
+  t.insert(22);
+  t.insert(64);
+  t.insert(63);
   //t.printInorder();
 
   t.insert(2);
   //t.printInorder();
 
-  std::cout << "root: " << t.root->key << std::endl;
+  //std::cout << "root: " << t.root->key << std::endl;
+  t.insert(6);
+  t.printPreorder();  std::cout << std::endl;
+
+/*
+  t.insert(3);
+  t.insert(624);
+  t.insert(629);
+  t.insert(6200);
+  t.insert(621);
+  t.insert(622);
+  t.insert(623);
+  t.insert(65);
+  t.insert(33);
+  std::cout <<"root:" << t.root->key << std::endl;
+  t.insert(32);
+  t.insert(16);
+  t.insert(322);
+  t.insert(52);
+  t.insert(22);
+  t.insert(64);
+  t.insert(63);
+  //t.printInorder();
+
+  t.insert(2);
+  //t.printInorder();
+
+  //std::cout << "root: " << t.root->key << std::endl;
   t.insert(6);
   //t.insert(3);
 
-  std::cout << "root: " << t.root->key << std::endl;
+  //std::cout << "root: " << t.root->key << std::endl;
   t.printInorder(); std::cout << std::endl;
   t.printPostorder(); std::cout << std::endl;
-  //std::cout << "done" << std::endl;
 
+  t.remove(322);
+
+  t.printInorder(); std::cout << std::endl;
+  t.printPostorder(); std::cout << std::endl;
+*/
 
   return 0;
 }
