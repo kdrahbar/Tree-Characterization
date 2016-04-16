@@ -1,5 +1,17 @@
+#include <unistd.h>
+#include <ios>
+#include <cstring>
+#include <unistd.h>
 #include <iostream>
 #include <string>
+#include <algorithm>
+#include <fstream>
+#include <time.h>
+#include <chrono>
+
+using namespace std;
+using  ns = chrono::nanoseconds;
+using get_time = chrono::steady_clock ;
 
 //Straightforward topdown splayTree
 //Operations like standard BST, but splay after operation
@@ -8,8 +20,44 @@
 //http://www.cs.cornell.edu/courses/cs3110/2011sp/recitations/rec25-splay/splay.htm
 // http://software.ucv.ro/~mburicea/lab7ASD.pdf
 
-
 // http://lcm.csa.iisc.ernet.in/dsa/node94.html
+
+void process_mem_usage(double& vm_usage, double& resident_set)
+{
+   using std::ios_base;
+   using std::ifstream;
+   using std::string;
+
+   vm_usage     = 0.0;
+   resident_set = 0.0;
+
+   // 'file' stat seems to give the most reliable results
+   //
+   ifstream stat_stream("/proc/self/stat",ios_base::in);
+
+   // dummy vars for leading entries in stat that we don't care about
+   //
+   string pid, comm, state, ppid, pgrp, session, tty_nr;
+   string tpgid, flags, minflt, cminflt, majflt, cmajflt;
+   string utime, stime, cutime, cstime, priority, nice;
+   string O, itrealvalue, starttime;
+
+   // the two fields we want
+   //
+   unsigned long vsize;
+   long rss;
+
+   stat_stream >> pid >> comm >> state >> ppid >> pgrp >> session >> tty_nr
+               >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
+               >> utime >> stime >> cutime >> cstime >> priority >> nice
+               >> O >> itrealvalue >> starttime >> vsize >> rss; // don't care about the rest
+
+   stat_stream.close();
+
+   long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
+   vm_usage     = vsize / 1024.0;
+   resident_set = rss * page_size_kb;
+}
 
 struct splayNode{
     int key;
@@ -25,7 +73,7 @@ class splayTree {
 
     bool search(int key); //returns true if in tree
     void insert(int key); //inserts key into tree
-    bool remove(int key); //deletes key from tree
+    bool deleteNode(int key); //deletes key from tree
 
     //printing
     void printInorder();
@@ -52,7 +100,7 @@ class splayTree {
 
     bool search(int key, splayNode * treeRoot);
     splayNode * insert(int key, splayNode * treeRoot, splayNode * p_node);
-    //splayNode * remove(int key, splayNode * root);
+    //splayNode * deleteNode(int key, splayNode * root);
 
     splayNode * splayMax(splayNode * treeRoot);
     splayNode * join(splayNode * SL, splayNode * SR);
@@ -356,7 +404,7 @@ void splayTree::insert(int key) {
 
 // NEED TO DOUBLE CHECK
 // parent assignement
-bool splayTree::remove(int key) {
+bool splayTree::deleteNode(int key) {
   if ( search(key) ) {
     splayNode * SL = root->left;
     if(SL != NULL) SL->parent = NULL;
@@ -457,92 +505,357 @@ void splayTree::printPreorder() {
   return;
 }
 
+void t_100() {
+     splayTree tree;
+    int size = 100;
+    //int ins_nums [size];
+
+    int test [100];
+    int pool [1000000];
+
+    for (int i = 0; i < 1000000; i++) {
+        pool[i] = i;
+    }
+    random_shuffle(std::begin(pool), std::end(pool));
+
+    for (int i = 0; i < size; i++) {
+        test[i] = pool[i];
+    }
+
+    random_shuffle(std::begin(test), std::end(test));
+    auto start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.insert(test[i]);
+    }
+
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "VM: " << vm << "; RSS: " << rss << endl;
+
+    auto end = get_time::now();
+    auto diff = end - start;
+    cout<<"Avg insert time for 100:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+
+    random_shuffle(std::begin(test), std::end(test));
+    start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.deleteNode(test[i]);
+    }
+    end = get_time::now();
+    diff = end - start;
+    cout<<"Avg delete time for 100:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+    cout << endl;
+}
+
+void t_1000() {
+     splayTree tree;
+    int size = 1000;
+    //int ins_nums [size];
+
+    int test [1000];
+    int pool [1000000];
+
+    for (int i = 0; i < 1000000; i++) {
+        pool[i] = i;
+    }
+    random_shuffle(std::begin(pool), std::end(pool));
+
+    for (int i = 0; i < size; i++) {
+        test[i] = pool[i];
+    }
+
+    random_shuffle(std::begin(test), std::end(test));
+    auto start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.insert(test[i]);
+    }
+
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "VM: " << vm << "; RSS: " << rss << endl;
+
+    auto end = get_time::now();
+    auto diff = end - start;
+    cout<<"Avg insert time for 1000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+
+    random_shuffle(std::begin(test), std::end(test));
+    start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.deleteNode(test[i]);
+    }
+    end = get_time::now();
+    diff = end - start;
+    cout<<"Avg delete time for 1000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+    cout << endl;
+}
+
+void t_10000() {
+     splayTree tree;
+    int size = 10000;
+    //int ins_nums [size];
+
+    int test [10000];
+    int pool [1000000];
+
+    for (int i = 0; i < 1000000; i++) {
+        pool[i] = i;
+    }
+    random_shuffle(std::begin(pool), std::end(pool));
+
+    for (int i = 0; i < size; i++) {
+        test[i] = pool[i];
+    }
+
+    random_shuffle(std::begin(test), std::end(test));
+    auto start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.insert(test[i]);
+    }
+
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "VM: " << vm << "; RSS: " << rss << endl;
+
+    auto end = get_time::now();
+    auto diff = end - start;
+    cout<<"Avg insert time for 10000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+
+    random_shuffle(std::begin(test), std::end(test));
+    start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.deleteNode(test[i]);
+    }
+    end = get_time::now();
+    diff = end - start;
+    cout<<"Avg delete time for 10000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+    cout << endl;
+}
+
+
+void t_100000() {
+     splayTree tree;
+    int size = 100000;
+    //int ins_nums [size];
+
+    int test [100000];
+    int pool [1000000];
+
+    for (int i = 0; i < 1000000; i++) {
+        pool[i] = i;
+    }
+    random_shuffle(std::begin(pool), std::end(pool));
+
+    for (int i = 0; i < size; i++) {
+        test[i] = pool[i];
+    }
+
+    random_shuffle(std::begin(test), std::end(test));
+    auto start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.insert(test[i]);
+    }
+
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "VM: " << vm << "; RSS: " << rss << endl;
+
+    auto end = get_time::now();
+    auto diff = end - start;
+    cout<<"Avg insert time for 100000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+
+    random_shuffle(std::begin(test), std::end(test));
+    start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.deleteNode(test[i]);
+    }
+    end = get_time::now();
+    diff = end - start;
+    cout<<"Avg delete time for 100000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+    cout << endl;
+}
+
+void t_250000() {
+     splayTree tree;
+    int size = 250000;
+    //int ins_nums [size];
+
+    int test [250000];
+    int pool [1000000];
+
+    for (int i = 0; i < 1000000; i++) {
+        pool[i] = i;
+    }
+    random_shuffle(std::begin(pool), std::end(pool));
+
+    for (int i = 0; i < size; i++) {
+        test[i] = pool[i];
+    }
+
+    random_shuffle(std::begin(test), std::end(test));
+    auto start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.insert(test[i]);
+    }
+
+    // int x = getmem();
+    // cout << x << endl;
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "VM: " << vm << "; RSS: " << rss << endl;
+
+    auto end = get_time::now();
+    auto diff = end - start;
+    cout<<"Avg insert time for 250,000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+
+    random_shuffle(std::begin(test), std::end(test));
+    start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.deleteNode(test[i]);
+    }
+    end = get_time::now();
+    diff = end - start;
+    cout<<"Avg delete time for 250,000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+    cout << endl;
+}
+
+void t_500000() {
+    splayTree tree;
+    int size = 500000;
+    //int ins_nums [size];
+
+    int test [500000];
+    int pool [1000000];
+
+    for (int i = 0; i < 1000000; i++) {
+        pool[i] = i;
+    }
+    random_shuffle(std::begin(pool), std::end(pool));
+
+    for (int i = 0; i < size; i++) {
+        test[i] = pool[i];
+    }
+
+    random_shuffle(std::begin(test), std::end(test));
+    auto start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.insert(test[i]);
+    }
+
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "VM: " << vm << "; RSS: " << rss << endl;
+
+    auto end = get_time::now();
+    auto diff = end - start;
+    cout<<"Avg insert time for 500000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+
+    random_shuffle(std::begin(test), std::end(test));
+    start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.deleteNode(test[i]);
+    }
+
+    end = get_time::now();
+    diff = end - start;
+    cout<<"Avg delete time for 500000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+    cout << endl;
+}
+
+
+void t_750000() {
+     splayTree tree;
+    int size = 750000;
+    //int ins_nums [size];
+
+    int test [750000];
+    int pool [1000000];
+
+    for (int i = 0; i < 1000000; i++) {
+        pool[i] = i;
+    }
+    random_shuffle(std::begin(pool), std::end(pool));
+
+    for (int i = 0; i < size; i++) {
+        test[i] = pool[i];
+    }
+
+    random_shuffle(std::begin(test), std::end(test));
+    auto start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.insert(test[i]);
+    }
+
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "VM: " << vm << "; RSS: " << rss << endl;
+
+    auto end = get_time::now();
+    auto diff = end - start;
+    cout<<"Avg insert time for 750,000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+
+    random_shuffle(std::begin(test), std::end(test));
+    start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.deleteNode(test[i]);
+    }
+    end = get_time::now();
+    diff = end - start;
+    cout<<"Avg delete time for 750,000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+    cout << endl;
+}
+
+
+void t_1000000() {
+    splayTree tree;
+    int size = 1000000;
+    ////int ins_nums [size];
+
+    int test [1000000];
+    int pool [1000000];
+
+    for (int i = 0; i < 1000000; i++) {
+        pool[i] = i;
+    }
+    random_shuffle(std::begin(pool), std::end(pool));
+
+    for (int i = 0; i < size; i++) {
+        test[i] = pool[i];
+    }
+
+    random_shuffle(std::begin(test), std::end(test));
+    auto start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.insert(test[i]);
+    }
+
+    double vm, rss;
+    process_mem_usage(vm, rss);
+    cout << "VM: " << vm << "; RSS: " << rss << endl;
+
+    auto end = get_time::now();
+    auto diff = end - start;
+    cout<<"Avg insert time for 1,000,000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+
+    random_shuffle(std::begin(test), std::end(test));
+    start = get_time::now();
+    for (int i = 0; i < size; i++) {
+        tree.deleteNode(test[i]);
+    }
+    end = get_time::now();
+    diff = end - start;
+    cout<<"Avg delete time for 1,000,000:  "<< chrono::duration_cast<ns>(diff).count()/size<<" ns "<<endl;
+    cout << endl;
+}
 
 int main() {
-  splayTree t;
-/*  t.insert(2);
-  t.insert(3);
-  t.insert(5);
-  //if (t.search(2) == true) std::cout <<"true" << std::endl;
-  t.remove(3);
-  t.printPreorder();  std::cout << std::endl;
-*/
-  t.insert(2);
-  t.insert(3);
-  t.insert(5);
-  //if (t.search(2) == true) std::cout <<"true" << std::endl;
-  t.remove(3);
-  t.printPreorder();  std::cout << std::endl;
-
-
-  t.insert(3);
-  t.insert(624);
-  t.insert(629);
-  t.remove(629);
-
-  t.insert(6200);
-  t.insert(621);
-  t.remove(3);
-
-  t.insert(622);
-  t.insert(623);
-  t.insert(65);
-  t.insert(33);
-  std::cout <<"root:" << t.root->key << std::endl;
-  t.insert(32);
-  t.insert(16);
-  t.insert(322);
-  t.remove(623);
-
-  t.insert(52);
-  t.insert(22);
-  t.insert(64);
-  t.insert(63);
-  //t.printInorder();
-
-  t.insert(2);
-  //t.printInorder();
-
-  //std::cout << "root: " << t.root->key << std::endl;
-  t.insert(6);
-  t.printPreorder();  std::cout << std::endl;
-
-/*
-  t.insert(3);
-  t.insert(624);
-  t.insert(629);
-  t.insert(6200);
-  t.insert(621);
-  t.insert(622);
-  t.insert(623);
-  t.insert(65);
-  t.insert(33);
-  std::cout <<"root:" << t.root->key << std::endl;
-  t.insert(32);
-  t.insert(16);
-  t.insert(322);
-  t.insert(52);
-  t.insert(22);
-  t.insert(64);
-  t.insert(63);
-  //t.printInorder();
-
-  t.insert(2);
-  //t.printInorder();
-
-  //std::cout << "root: " << t.root->key << std::endl;
-  t.insert(6);
-  //t.insert(3);
-
-  //std::cout << "root: " << t.root->key << std::endl;
-  t.printInorder(); std::cout << std::endl;
-  t.printPostorder(); std::cout << std::endl;
-
-  t.remove(322);
-
-  t.printInorder(); std::cout << std::endl;
-  t.printPostorder(); std::cout << std::endl;
-*/
+  t_100();
+  t_1000();
+  t_10000();
+  t_100000();
+  t_250000();
+  t_500000();
+  t_750000();
+  t_1000000();
 
   return 0;
 }
