@@ -349,7 +349,6 @@ void AVLtree::printPreorder() {
 void t_100() {
      AVLtree tree;
     int size = 100;
-    int ins_nums [size];
 
     int test [100];
     int pool [1000000];
@@ -391,7 +390,6 @@ void t_100() {
 void t_1000() {
      AVLtree tree;
     int size = 1000;
-    int ins_nums [size];
 
     int test [1000];
     int pool [1000000];
@@ -433,7 +431,6 @@ void t_1000() {
 void t_10000() {
      AVLtree tree;
     int size = 10000;
-    int ins_nums [size];
 
     int test [10000];
     int pool [1000000];
@@ -476,7 +473,6 @@ void t_10000() {
 void t_100000() {
      AVLtree tree;
     int size = 100000;
-    int ins_nums [size];
 
     int test [100000];
     int pool [1000000];
@@ -518,7 +514,6 @@ void t_100000() {
 void t_250000() {
      AVLtree tree;
     int size = 250000;
-    int ins_nums [size];
 
     int test [250000];
     int pool [1000000];
@@ -562,7 +557,6 @@ void t_250000() {
 void t_500000() {
     AVLtree tree;
     int size = 500000;
-    int ins_nums [size];
 
     int test [500000];
     int pool [1000000];
@@ -606,7 +600,6 @@ void t_500000() {
 void t_750000() {
      AVLtree tree;
     int size = 750000;
-    int ins_nums [size];
 
     int test [750000];
     int pool [1000000];
@@ -649,7 +642,6 @@ void t_750000() {
 void t_1000000() {
      AVLtree tree;
     int size = 1000000;
-    int ins_nums [size];
 
     int test [1000000];
     int pool [1000000];
