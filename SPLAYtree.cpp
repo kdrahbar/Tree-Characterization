@@ -20,7 +20,7 @@ using get_time = chrono::steady_clock ;
 // http://software.ucv.ro/~mburicea/lab7ASD.pdf
 
 // http://lcm.csa.iisc.ernet.in/dsa/node94.html
-
+int i = 0;
 void process_mem_usage(double& vm_usage, double& resident_set)
 {
    using std::ios_base;
@@ -351,13 +351,10 @@ bool splayTree::search(int key, splayNode * treeRoot) {
       cur = cur->right;
     }
   }
-
+  // cout << "here" << endl;
   root = splay(pred, treeRoot);
   return false;
 }
-
-
-
 
 
 bool splayTree::search(int key) {
@@ -409,8 +406,11 @@ bool splayTree::deleteNode(int key) {
     if(SL != NULL) SL->parent = NULL;
     splayNode * SR = root->right;
     if(SR != NULL) SR->parent = NULL;
-
+    splayNode * tmp = root;
+    
+    delete tmp;
     root = join(SL, SR);
+
     return true;
 
   }
@@ -433,12 +433,29 @@ splayNode * splayTree::splayMax(splayNode * treeRoot) {
 splayNode * splayTree::join(splayNode * SL, splayNode * SR) {
   if(SL != NULL) {
     //NOT EFFICIENT BUT WORKS
+
     splayNode * leftMax = findMax(SL);
-    search(leftMax->key, SL);
-    SL->parent = NULL;
-    SL->right = SR;
-    return SL;
-    //set
+    if (leftMax->parent == NULL) {
+      leftMax->right = SR;
+    }
+
+    else {
+      splayNode * tmp_parent = leftMax->parent;
+
+      tmp_parent->right = NULL;
+
+      leftMax->parent = NULL;
+      leftMax->left = SL;
+      leftMax->right = SR;
+
+      SL->parent = leftMax;
+    }
+    if (SR != NULL) {
+      SR->parent = leftMax;
+    }
+
+    return leftMax;
+
   }
   else if (SR != NULL) {
     return SR;
@@ -526,7 +543,8 @@ void t_100() {
     for (int i = 0; i < size; i++) {
         tree.insert(test[i]);
     }
-
+    
+    
     double vm, rss;
     process_mem_usage(vm, rss);
     cout << "VM: " << vm << "; RSS: " << rss << endl;
@@ -537,6 +555,8 @@ void t_100() {
 
     random_shuffle(std::begin(test), std::end(test));
     start = get_time::now();
+
+
     for (int i = 0; i < size; i++) {
         tree.deleteNode(test[i]);
     }
@@ -847,6 +867,8 @@ void t_1000000() {
 }
 
 int main() {
+   splayTree tree;
+
   t_100();
   t_100();
   t_1000();
