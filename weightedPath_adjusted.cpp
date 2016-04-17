@@ -9,14 +9,9 @@
 #include <time.h>
 #include <chrono>
 
-//Maybe can improve delete operation
-//Just got something working
-
-
 using namespace std;
 using  ns = chrono::nanoseconds;
 using get_time = chrono::steady_clock ;
-
 
 void process_mem_usage(double& vm_usage, double& resident_set)
 {
@@ -55,107 +50,333 @@ void process_mem_usage(double& vm_usage, double& resident_set)
    resident_set = rss * page_size_kb;
 }
 
-struct BSTnode
-{
-    int data;
-    BSTnode* left;
-    BSTnode* right;
+struct WplRec {
+    WplRec * left;   //WplPtr
+    int item;        //key?
+    int WT;           //Weight associated with node
+    WplRec * right;  //WplPtr
 };
 
-class BSTtree
-{
+class WplTree {
+
   public:
-    BSTtree();
-    ~BSTtree();
+    WplTree();
     void insert(int);
     void deleteNode(int);
-    bool search(int);
+    //WplRec * search(int);
+
+    //printing
     void printInorder();
+    void printPreorder();
 
-  private:
-    BSTnode* root;
+    WplRec * root;
 
-    BSTnode * makeEmpty(BSTnode *);
-    BSTnode * insert(int, BSTnode *);
-    BSTnode * findMin(BSTnode *);
-    BSTnode * findMax(BSTnode *);
-    BSTnode * deleteNode(int, BSTnode *);
-    bool search(int, BSTnode *);
+  //private:
+    //WplRec * root;
 
-    //print
-    void printInorder(BSTnode * t);
+
+    //Helper Functions
+    struct WplRec* newNode(int); //NOT SURE
+    bool lessThan(int a, int b);
+    WplRec * NewWplPtr(WplRec * l, int i, int WT, WplRec * r);
+    int wt (WplRec * t);
+
+
+    void rightRotate (WplRec * t, WplRec * parent);
+    void leftRotate (WplRec * t, WplRec * parent);
+    WplRec * insertLookup (WplRec * t, int, WplRec * p);
+    //void insertLookup (WplRec * t, int, WplRec * p);
+    void checkRightRotation(WplRec * t, WplRec * parent);
+    void checkLeftRotation(WplRec * t, WplRec * parent);
+
+    void checkRightRotationTrue(WplRec * t, WplRec * parent);
+    void checkLeftRotationTrue(WplRec * t, WplRec * parent);
+
+    WplRec * findMin(WplRec * t);
+    WplRec* deleteNode(int x, WplRec* t);
+
+
+    //printing
+    void printInorder(WplRec * t);
+    void printPreorder(WplRec * t);
+
+    WplRec* testInsert ( WplRec* node, int key, int weight);
+    WplRec * testInsert(int key, int weight);
+
 
 };
 
-BSTtree::BSTtree() {
+WplTree::WplTree() {
     root = NULL;
 }
 
-BSTtree::~BSTtree() {
-  root = makeEmpty(root);
+WplRec* WplTree::testInsert ( WplRec* node, int key, int weight) {
+    if(node == NULL) {
+        WplRec * newNode = new WplRec;
+        newNode->item = key;
+        newNode->left = NULL;
+        newNode->right = NULL;
+        newNode->WT = weight;
+
+        return newNode;
+    }
+    if(key<node->item)
+        node->left = testInsert(node->left, key, weight);
+    else //key >= node->key
+        node->right = testInsert(node->right, key, weight);
+    return node;
 }
 
-void BSTtree::insert(int x) {
-  root = insert(x, root);
+WplRec * WplTree::testInsert(int key, int weight) {
+    root = testInsert(root, key, weight);
+    return root;
 }
 
-void BSTtree::deleteNode(int x) {
-    root = deleteNode(x, root);
+
+bool WplTree::lessThan(int a, int b){
+    if (a < b) {
+        return true;
+    }
+    return false;
 }
 
-bool BSTtree::search(int x, BSTnode* t) {
+WplRec * WplTree::NewWplPtr(WplRec * l, int i, int WT, WplRec * r) {
+    WplRec * newNode = new WplRec;
+    newNode->left = l;
+    newNode->item = i;
+    newNode->WT = WT;
+    newNode->right = r;
+    return newNode;
+}
+
+int WplTree::wt (WplRec * t) {
+
+    int wt = t->WT;
+    if (t->left != NULL)
+      wt = wt - t->left->WT;
+    if (t->right != NULL)
+      wt = wt - t->right->WT;
+    return wt;
+}
+
+void WplTree::rightRotate(WplRec * t, WplRec * parent) {
+  if(parent == NULL) {
+    //std::cout << "root change" << std::endl;
+    root = t->left;
+  }
+
+  int totalWT = t->WT;
+  WplRec * tmp = t;
+  t = t->left;
+
+
+  if (tmp->left->right == NULL) {tmp->WT = tmp->WT - tmp->left->WT+1;}
+  else {tmp->WT = tmp->WT - tmp->left->WT + tmp->left->right->WT;}
+
+  tmp->left = tmp->left->right;
+
+  t->right = tmp;
+  t->WT = totalWT;
+  if(parent!=NULL && parent->item>t->item) parent->left = t;
+  else if(parent!=NULL) parent->right = t;
+
+  //root = t;
+  return;
+}
+
+
+void WplTree::leftRotate(WplRec * t, WplRec * parent) {
+  //std::cout << "inLeft"<< t->item << std::endl;
+
+  if(parent == NULL) {
+    //std::cout << "root change" << std::endl;
+    root = t->right;
+  }
+  int totalWT = t->WT;
+  WplRec * tmp = t;
+  t = t->right;
+
+  if (tmp->right->left == NULL) {tmp->WT = tmp->WT - tmp->right->WT+1; }
+  else {tmp->WT = tmp->WT - tmp->right->WT + tmp->right->left->WT; }
+
+  tmp->right = tmp->right->left;
+  t->left = tmp;
+  t->WT = totalWT;
+
+  if(parent!=NULL && parent->item>t->item) parent->left = t;
+  else if(parent!=NULL) parent->right = t;
+
+
+/*
+  int totalWT = t->WT;
+  WplRec * tmp = t;
+  t = t->right;
+  tmp->WT = tmp->WT - tmp->right->WT + tmp->right->left->WT;
+  tmp->left = tmp->right->left;
+  t->right = tmp;
+  t->WT = totalWT;
+  root = t;
+
+  std::cout << "IMPORTANT\n"
+            << root->item << " " << root->WT << "\n"<< root->left->item<<" "<<root->left->WT<<"\n"
+            << root->right->item<<" "<<root->right->WT<<"\n"<< root->right->left->item
+            << " "<<root->right->left->WT<< std::endl;
+*/
+  return;
+}
+
+void WplTree::checkRightRotationTrue(WplRec * t, WplRec * parent) {
+  if (t->left != NULL && t->left->right != NULL) {
+    //if (2*t->left->WT > t->left->right->WT+t->WT) {
+    //if (t->left->right == NULL || 2*t->left->WT > t->left->right->WT+t->WT) {
+      //std::cout << "checkRightRotation is TRUE: "<< t->item << std::endl;
+      rightRotate(t, parent);
+      if (t->right!=NULL) checkLeftRotationTrue (t->right, parent);
+    //}
+  }
+  return;
+}
+
+void WplTree::checkLeftRotationTrue(WplRec * t, WplRec * parent) {
+  if (t->right!=NULL && t->right->left != NULL) {
+
+    //if (2*t->right->WT > t->right->left->WT+t->WT) {
+    //if (t->right->left == NULL || 2*t->right->WT > t->right->left->WT+t->WT) {
+      //std::cout << "checkLeftRotation is TRUE, node: "<< t->item << std::endl;
+      leftRotate(t, parent);
+
+      if (t->left!=NULL) checkRightRotationTrue (t->left, parent);
+    //}
+  }
+  return;
+}
+
+void WplTree::checkRightRotation (WplRec * t, WplRec * parent) {
+  if (t->left != NULL && t->left->right != NULL) {
+    if (2*t->left->WT > t->left->right->WT+t->WT) {
+    //if (t->left->right == NULL || 2*t->left->WT > t->left->right->WT+t->WT) {
+      //std::cout << "checkRightRotation is TRUE: "<< t->item << std::endl;
+      rightRotate(t, parent);
+      if (t->right!=NULL) checkLeftRotationTrue (t->right, parent);
+    }
+  }
+  return;
+}
+
+void WplTree::checkLeftRotation (WplRec * t, WplRec * parent) {
+  //std::cout << "t_lRot: " << t->item << std::endl;
+  if (t->right!=NULL && t->right->left != NULL) {
+
+    if (2*t->right->WT > t->right->left->WT+t->WT) {
+    //if (t->right->left == NULL || 2*t->right->WT > t->right->left->WT+t->WT) {
+      //std::cout << "checkLeftRotation is TRUE, node: "<< t->item << std::endl;
+      leftRotate(t, parent);
+
+      if (t->left!=NULL) checkRightRotationTrue (t->left, parent);
+    }
+  }
+  return;
+}
+
+WplRec * WplTree::insertLookup(WplRec * t, int i, WplRec * parent) {
+  //Moved this to top for ease of coding
+  if(t==NULL) {
+    t = NewWplPtr(NULL, i, 1, NULL);
+
+    //std::cout <<"hi" << t->item << std::endl;
+    if (parent == NULL) root = t;
+    else if(parent->item < t->item) parent->right = t;
+    else parent->left = t;
+
+    return t;
+  }
+
+  else if( lessThan(i, t->item) ) {
+    insertLookup(t->left, i, t);
+    //std::cout << "t: " << t->item << std::endl;
+    t->WT = t->WT+1;
+    checkRightRotation(t, parent);
+    return t;
+  }
+  else if (lessThan(t->item, i) ) {
+    insertLookup(t->right, i, t);
+    //std::cout << "hi0" << std::endl;
+    t->WT = t->WT+1;
+    checkLeftRotation(t, parent);
+    return t;
+  }
+  //Should NOT reach this case unless node is already in here
+  else {
+    t->WT = t->WT+1;
+    return t;
+  }
+
+}
+
+void WplTree::insert(int i) {
+  //std::cout << "inserting: " << i << std::endl;
+  //root = insertLookup(root, i, NULL);
+  insertLookup(root, i, NULL);
+  return;
+}
+
+void WplTree::printInorder(struct WplRec * leaf) {
+    if (leaf != NULL) {
+        printInorder(leaf->left);
+        std::cout << leaf->item <<"\t"<<leaf->WT<<"\t"<< std::endl;
+        printInorder(leaf->right);
+    }
+    return;
+}
+
+void WplTree::printInorder() {
+  printInorder(root);
+  return;
+}
+// void wplTree::globalInsertLookup(WplRec * t, int i) {
+//   //Not sure
+//   //i =
+//   insertLookup(t, i);
+//   return;
+// }
+
+
+void WplTree::printPreorder(struct WplRec * leaf) {
+    if (leaf != NULL) {
+      std::cout << leaf->item <<"\t"<<leaf->WT<<"\t"<< " ";//std::endl;
+        printPreorder(leaf->left);
+        printPreorder(leaf->right);
+    }
+    return;
+}
+
+void WplTree::printPreorder() {
+  printPreorder(root);
+  return;
+}
+
+WplRec * WplTree::findMin(WplRec * t) {
   if(t == NULL)
-      return false;
-  else if(x < t->data)
-      return search(x, t->left);
-  else if(x > t->data)
-      return search(x, t->right);
+      return NULL;
+  else if(t->left == NULL)
+      return t;
   else
-      return true;
+      return findMin(t->left);
 }
 
-bool BSTtree::search(int x) {
-  return search(x, root);
-}
-
-BSTnode* BSTtree::makeEmpty(BSTnode* t) {
+WplRec* WplTree::deleteNode(int x, WplRec* t) {
+  WplRec* temp;
   if(t == NULL)
       return NULL;
-  {
-      makeEmpty(t->left);
-      makeEmpty(t->right);
-      delete t;
-  }
-  return NULL;
-}
-
-BSTnode* BSTtree::insert(int x, BSTnode* t) {
-  if(t == NULL)
-  {
-      t = new BSTnode;
-      t->data = x;
-      t->left = t->right = NULL;
-  }
-  else if(x < t->data)
-      t->left = insert(x, t->left);
-  else if(x > t->data)
-      t->right = insert(x, t->right);
-  return t;
-}
-
-BSTnode* BSTtree::deleteNode(int x, BSTnode* t) {
-  BSTnode* temp;
-  if(t == NULL)
-      return NULL;
-  else if(x < t->data)
+  else if(x < t->item)
       t->left = deleteNode(x, t->left);
-  else if(x > t->data)
+  else if(x > t->item)
       t->right = deleteNode(x, t->right);
   else if(t->left && t->right)
   {
       temp = findMin(t->right);
-      t->data = temp->data;
-      t->right = deleteNode(t->data, t->right);
+      t->item = temp->item;
+      t->right = deleteNode(t->item, t->right);
   }
   else
   {
@@ -170,40 +391,14 @@ BSTnode* BSTtree::deleteNode(int x, BSTnode* t) {
   return t;
 }
 
-BSTnode * BSTtree::findMin(BSTnode * t) {
-  if(t == NULL)
-      return NULL;
-  else if(t->left == NULL)
-      return t;
-  else
-      return findMin(t->left);
-}
-
-BSTnode * BSTtree::findMax(BSTnode * t) {
-  if(t == NULL)
-      return NULL;
-  else if(t->right == NULL)
-      return t;
-  else
-      return findMax(t->right);
-}
-
-void BSTtree::printInorder(BSTnode* t) {
-  if(t == NULL)
-      return;
-  printInorder(t->left);
-  std::cout << t->data << std::endl;
-  printInorder(t->right);
-}
-
-void BSTtree::printInorder() {
-  return printInorder(root);
+void WplTree::deleteNode(int x) {
+    root = deleteNode(x, root);
 }
 
 void t_100() {
-     BSTtree tree;
+     WplTree tree;
     int size = 100;
-    ////int ins_nums [size];
+    //int ins_nums [size];
 
     int test [100];
     int pool [1000000];
@@ -243,9 +438,9 @@ void t_100() {
 }
 
 void t_1000() {
-     BSTtree tree;
+     WplTree tree;
     int size = 1000;
-    ////int ins_nums [size];
+    //int ins_nums [size];
 
     int test [1000];
     int pool [1000000];
@@ -285,9 +480,9 @@ void t_1000() {
 }
 
 void t_10000() {
-     BSTtree tree;
+    WplTree tree;
     int size = 10000;
-    ////int ins_nums [size];
+    //int ins_nums [size];
 
     int test [10000];
     int pool [1000000];
@@ -328,7 +523,7 @@ void t_10000() {
 
 
 void t_100000() {
-     BSTtree tree;
+     WplTree tree;
     int size = 100000;
     //int ins_nums [size];
 
@@ -370,7 +565,7 @@ void t_100000() {
 }
 
 void t_250000() {
-     BSTtree tree;
+     WplTree tree;
     int size = 250000;
     //int ins_nums [size];
 
@@ -414,7 +609,7 @@ void t_250000() {
 }
 
 void t_500000() {
-    BSTtree tree;
+    WplTree tree;
     int size = 500000;
     //int ins_nums [size];
 
@@ -458,9 +653,9 @@ void t_500000() {
 
 
 void t_750000() {
-     BSTtree tree;
+     WplTree tree;
     int size = 750000;
-    //int ins_nums [size];
+    // int ins_nums [size];
 
     int test [750000];
     int pool [1000000];
@@ -501,9 +696,9 @@ void t_750000() {
 
 
 void t_1000000() {
-     BSTtree tree;
+     WplTree tree;
     int size = 1000000;
-    //int ins_nums [size];
+    // int ins_nums [size];
 
     int test [1000000];
     int pool [1000000];
@@ -542,8 +737,8 @@ void t_1000000() {
     cout << endl;
 }
 
-int main()
-{
+int main() {
+
   t_100();
   t_1000();
   t_10000();
@@ -553,5 +748,6 @@ int main()
   t_750000();
   t_1000000();
 
+
+  return 0;
 }
-//int ins_nums
