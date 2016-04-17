@@ -1,7 +1,6 @@
 #include <unistd.h>
 #include <ios>
 #include <cstring>
-#include <unistd.h>
 #include <iostream>
 #include <string>
 #include <algorithm>
@@ -848,6 +847,7 @@ void t_1000000() {
 }
 
 int main() {
+  t_100();
   t_100();
   t_1000();
   t_10000();
